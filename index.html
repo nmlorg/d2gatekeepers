@@ -48,6 +48,16 @@ for (let id of ['R1', 'RL', 'R3', 'RR', 'DL', 'DR']) {
   let span = images.appendChild(document.createElement('span'));
   span.textContent = person.value;
   labels.push(span);
+  person.addEventListener('change', e => {
+    let names = people.map(person => encodeURIComponent(person.value));
+    location.hash = names.join(',');
+  });
+}
+
+if (location.hash) {
+  let names = location.hash.substr(1).split(',');
+  for (let i = 0; (i < names.length) && (i < people.length); i++)
+    people[i].value = decodeURIComponent(names[i]);
 }
 
 const LOCATIONS = {
