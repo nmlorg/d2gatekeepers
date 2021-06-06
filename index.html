@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+
+<input id="R1" value="ITOWN92"> <span></span><br>
+<input id="R3" value="nmlorg"> <span></span><br>
+<input id="RL" value="wheelofvoid"> <span></span><br>
+<input id="RR" value="MrMoo759"> <span></span><br>
+<input id="DL" value="D-lightbearer"> <span></span><br>
+<input id="DR" value="MandolinNY"> <span></span><br>
+
+<br>
+
+<div id="images">
+<img src="https://destinyraider.files.wordpress.com/2015/03/vog_maps_vault_future-gatekeeper.png">
+<img src="https://destinyraider.files.wordpress.com/2015/03/vog_maps_vault-of-glass1.png">
+<img src="https://destinyraider.files.wordpress.com/2015/01/vog_maps_vault_past-gatekeeper.png">
+</div>
+
+<style>
+div#images {
+  border: 3px solid green;
+  font-size: 0;
+  position: relative;
+  width: 2400px;
+}
+
+div#images > span {
+  color: red;
+  font-size: 16px;
+  left: 0;
+  position: absolute;
+  text-shadow: 0px 0px 5px black;
+  top: 0;
+  transition: left 1s, top 1s;
+}
+</style>
+
+<div id="label"></div>
+
+<script>
+let images = document.getElementById('images');
+let label = document.getElementById('label');
+let people = [];
+let labels = [];
+
+for (let id of ['R1', 'RL', 'R3', 'RR', 'DL', 'DR']) {
+  let person = document.getElementById(id);
+  people.push(person);
+  let span = images.appendChild(document.createElement('span'));
+  span.textContent = person.value;
+  labels.push(span);
+}
+
+const LOCATIONS = {
+    'out-stairs-left': [47, 88, 'Outside stairs'],
+    'out-stairs-right': [51, 88, 'Outside stairs'],
+    'out-relic': [48, 40, 'Outside middle bowl'],
+    'out-gatekeeper': [49, 70, 'Outside front platform'],
+    'out-left-plate': [41, 80, 'Outside Mars/left plate'],
+    'out-left-gate': [41, 68, 'Outside Mars/left gate'],
+    'out-right-plate': [56, 80, 'Outside Venus/right plate'],
+    'out-right-gate': [56, 68, 'Outside Venus/right gate'],
+    'left-gate': [10, 55, 'Mars/left gate'],
+    'left-adds': [15, 30, 'Mars/left stairs'],
+    'right-gate': [87, 55, 'Venus/right gate'],
+    'right-adds': [82, 30, 'Venus/right stairs'],
+};
+
+function setPositions(step) {
+  let [text, locations] = STEPS[step];
+  for (let i = 0; i < people.length; i++) {
+    text = text.replaceAll(`!${i}`, people[i].value);
+    labels[i].textContent = people[i].value;
+  }
+  label.textContent = `${step + 1}. ${text}`;
+  let overlaps = {};
+  for (let i = 0; i < locations.length; i++) {
+    let location = locations[i];
+    let [left, top, name] = LOCATIONS[location];
+    if (!overlaps[location])
+      overlaps[location] = 0;
+    top += overlaps[location] * 2.2;
+    overlaps[location]++;
+    let label = labels[i];
+    label.style.left = `${left}%`;
+    label.style.top = `${top}%`;
+    let person = people[i];
+    person.nextElementSibling.textContent = name;
+  }
+}
+
+let STEPS = [
+    [
+        'Everyone starts at the outside stairwell and rallies to the flag.',
+        ['out-stairs-left', 'out-stairs-left', 'out-stairs-right', 'out-stairs-right', 'out-stairs-left', 'out-stairs-right'],
+    ], [
+        'Mars/left defender (!4) goes to the Mars/left plate, Mars/left adds (!1) goes to the Mars/left gate, Venus/right defender (!5) goes to the Venus/right plate, and Venus/right adds (!3) goes to the Venus/right gate; they all kill adds (outside). Relic (!0) and floater (!2) go to the center, kill the Gatekeeper, and retrieve the relic.',
+        ['out-relic', 'out-left-gate', 'out-relic', 'out-right-gate', 'out-left-plate', 'out-right-plate'],
+    ], [
+        'Killing the Gatekeeper opens both gates. Mars/left adds (!1) and Venus/right adds (!3) enter their gates and begin clearing. Relic (!0) and floater (!2) help the defenders keep outside clear.',
+        ['out-gatekeeper', 'left-gate', 'out-gatekeeper', 'right-gate', 'out-left-plate', 'out-right-plate'],
+    ], [
+        'Wyvern appears on Venus/right, Minotaur appears on Mars/left. Mars/left adds (!1) calls out "Minotaur Mars" and continues clearing. This starts the cycle.',
+        ['out-gatekeeper', 'left-adds', 'out-gatekeeper', 'right-adds', 'out-left-plate', 'out-right-plate'],
+    ],
+];
+
+let minotKills = 0;
+let minotLoc = 0;
+let relicLoc = -1;
+let holder = 0;
+let transfer = 1;
+let floater = 2;
+let idle = 3;
+
+function addStep() {
+  let gates = ['Mars/left', 'Venus/right'];
+  let sides = ['left', 'right'];
+  let wyvernLoc = (minotLoc + 1) % 2;
+  let locations = STEPS[STEPS.length - 1][1].slice();
+  let text;
+
+  if (relicLoc == -1) {
+    text = `Relic (!${holder}) enters ${gates[minotLoc]}. Floater (!${floater}) moves to the ${gates[wyvernLoc]} outside gate and helps clear.`;
+    locations[holder] = `${sides[minotLoc]}-gate`;
+    locations[floater] = `out-${sides[wyvernLoc]}-gate`;
+    relicLoc = minotLoc;
+  } else if (relicLoc == minotLoc) {
+    text = `Relic (!${holder}) kills Minotaur #${++minotKills} while adds (!${transfer}) continues clearing. Relic (!${holder}) drops the relic and starts clearing. Adds (!${transfer}) picks up the relic and returns through the gate. (${gates[wyvernLoc]} adds (!${idle}) kills Wyvern and continues clearing.)`;
+    locations[holder] = `${sides[minotLoc]}-adds`;
+    locations[transfer] = `${sides[minotLoc]}-gate`;
+    [holder, transfer] = [transfer, holder];
+    minotLoc = wyvernLoc;
+  } else {
+    text = `Relic (!${holder}) meets up with floater (!${floater}) and drops the relic. Floater (!${floater}) picks up the relic.`;
+    locations[holder] = `out-${sides[minotLoc]}-gate`;
+    [holder, floater] = [floater, holder];
+    [transfer, idle] = [idle, transfer];
+    relicLoc = -1;
+  }
+  STEPS.push([text, locations]);
+}
+
+for (let i = 0; i < 16; i++)
+  addStep();
+
+STEPS.push([
+    text = `Relic (!${holder}) kills Minotaur #6. This ends the cycle. Relic (!${holder}) and both adds (!${transfer} and !${idle}) return through the gate.`,
+    ['out-left-gate', 'out-left-gate', 'out-right-gate', 'out-right-gate', 'out-left-plate', 'out-right-plate'],
+]);
+STEPS.push([
+    'Everyone meets in the center and defends the conflux.',
+    ['out-relic', 'out-relic', 'out-relic', 'out-relic', 'out-relic', 'out-relic'],
+]);
+
+let STEP = STEPS.length - 1;
+
+let prevButton = document.body.appendChild(document.createElement('button'));
+prevButton.textContent = 'Prev';
+prevButton.addEventListener('click', e => {
+  STEP = (STEP + STEPS.length - 1) % STEPS.length;
+  setPositions(STEP);
+});
+
+let nextButton = document.body.appendChild(document.createElement('button'));
+nextButton.textContent = 'Next';
+nextButton.addEventListener('click', e => {
+  STEP = (STEP + 1) % STEPS.length;
+  setPositions(STEP);
+});
+nextButton.click();
+</script>
